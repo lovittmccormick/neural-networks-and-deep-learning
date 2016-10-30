@@ -60,6 +60,13 @@ else:
     print "Running with a CPU.  If this is not desired, then the modify "+\
         "network3.py to set\nthe GPU flag to True."
 
+USESGD = True
+if USESGD:
+    print "Using Standard SGD...\n"
+
+else:
+    print "Using RMSprop...\n"
+    
 #### Load the MNIST data
 def load_data_shared(filename="../data/mnist.pkl.gz"):
     f = gzip.open(filename, 'rb')
@@ -116,9 +123,35 @@ class Network(object):
         l2_norm_squared = sum([(layer.w**2).sum() for layer in self.layers])
         cost = self.layers[-1].cost(self)+\
                0.5*lmbda*l2_norm_squared/num_training_batches
-        grads = T.grad(cost, self.params)
-        updates = [(param, param-eta*grad)
-                   for param, grad in zip(self.params, grads)]
+        #grads = T.grad(cost, self.params)
+        #updates = [(param, param-eta*grad)
+        #           for param, grad in zip(self.params, grads)]
+               
+        # ----------------------
+
+        if USESGD:
+            # STANDARD SGD
+            grads = T.grad(cost, self.params)
+            updates = [(param, param-eta*grad)
+                       for param, grad in zip(self.params, grads)]
+
+        else:
+            #RMSprop
+            lr=0.001
+            rho=0.9
+            epsilon=1e-6
+            
+            grads = T.grad(cost, self.params)
+            updates = []
+            for p, g in zip(self.params, grads):
+                acc = theano.shared(p.get_value() * 0.)
+                acc_new = rho * acc + (1 - rho) * g ** 2
+                gradient_scaling = T.sqrt(acc_new + epsilon)
+                g = g / gradient_scaling
+                updates.append((acc, acc_new))
+                updates.append((p, p - lr * g))
+
+        # ------------------
 
         # define functions to train a mini-batch, and to compute the
         # accuracy in validation and test mini-batches.
