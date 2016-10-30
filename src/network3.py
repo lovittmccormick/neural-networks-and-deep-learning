@@ -60,7 +60,7 @@ else:
     print "Running with a CPU.  If this is not desired, then the modify "+\
         "network3.py to set\nthe GPU flag to True."
 
-USESGD = True
+USESGD = False
 if USESGD:
     print "Using Standard SGD...\n"
 
